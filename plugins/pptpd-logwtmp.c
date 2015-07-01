@@ -55,24 +55,25 @@ static void write_to_log(const char* log_name, char* buf, int len)
     syslog(LOG_ERR, "Can not open %s", log_name);
     syslog(LOG_INFO, "%s", buf);
   } else {
+    char log_str[1024];
     char time_str[64];
     int time_str_len;
     struct timeval tv;
     struct tm* logtm;
+    char pid_str[16];
+    int pid = getpid();
+
     gettimeofday(&tv, NULL);
     logtm = localtime(&tv.tv_sec);
     time_str_len = strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S %Z ", logtm);
-    if (write(fd, time_str, time_str_len) == -1)
-      syslog(LOG_ERR, "Write time string to log %s failed.", log_name);
-    char pid_str[16];
-    int pid = getpid();
-    int pid_str_len =  sprintf(pid_str, "pppd[%d]: ", pid);
-    if (write(fd, pid_str, pid_str_len) == -1)
-      syslog(LOG_ERR, "Write pid %d to log %s failed.", pid, log_name);
-    if (write(fd, buf, len) == -1)
-      syslog(LOG_ERR, "Write buffer to log %s failed.", log_name);
-    if (write(fd, "\n", 1) == -1)
-      syslog(LOG_ERR, "Write line ending to log %s failed.", log_name);
+    sprintf(pid_str, "pppd[%d]: ", pid);
+
+    strcpy(log_str, time_str);
+    strcat(log_str, pid_str);
+    strcat(log_str, buf);
+    strcat(log_str, "\n");
+    if (write(fd, log_str, strlen(log_str)) == -1)
+      syslog(LOG_ERR, "Write log %s failed.", log_name);
     close(fd);
   }
 }
